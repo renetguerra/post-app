@@ -89,7 +89,7 @@ export const postSlice = createSlice({
       );
       state.postListTemp.splice(postIndex, 1);
 
-      state.posts = state.postListTemp;
+      if (state.postListTemp.length > 0) state.posts = state.postListTemp;
     },
   },
 });
