@@ -23,7 +23,7 @@ const Transition = React.forwardRef(function Transition(
 });
 
 export interface ConfirmDialogProps {    
-    onClose(): void;
+    onClose: (post: Post) => void;
     title: string;
     message: string;   
     open: boolean
