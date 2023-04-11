@@ -3,7 +3,6 @@ import { Post } from "@/interfaces/post";
 import {
   addPost,
   deletePostById,
-  filterPost,
   savingPost,
   setActivePost,
   setPosts,
