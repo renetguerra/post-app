@@ -10,9 +10,7 @@ import {
   setSaving,
   updatePost,
 } from "./postSlice";
-import { createAsyncThunk } from "@reduxjs/toolkit";
 import { AppDispatch, RootState } from "../store";
-import Cookies from "js-cookie";
 import { getPosts } from "@/helpers/postRequest";
 
 export const startAddPost = (postToCreate: Post) => {
