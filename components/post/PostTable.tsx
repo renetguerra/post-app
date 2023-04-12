@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Table,
   TableHead,
@@ -15,28 +15,28 @@ import {
   Divider,
   Paper,
   TableFooter,
-} from '@mui/material';
-import IconButton from '@mui/material/IconButton';
-import EditIcon from '@mui/icons-material/Edit';
-import { Post } from '@/interfaces/post';
-import DeleteIcon from '@mui/icons-material/DeleteOutlined';
-import ConfirmDialog, { ConfirmDialogProps } from '../ui/ConfirmDialog';
-import FormDialog, { FormDialogProps } from '../ui/FormDialog';
-import Box from '@mui/material/Box';
+} from "@mui/material";
+import IconButton from "@mui/material/IconButton";
+import EditIcon from "@mui/icons-material/Edit";
+import { Post } from "@/interfaces/post";
+import DeleteIcon from "@mui/icons-material/DeleteOutlined";
+import ConfirmDialog, { ConfirmDialogProps } from "../ui/ConfirmDialog";
+import Box from "@mui/material/Box";
 import {
   AddOutlined,
   KeyboardArrowLeft,
   KeyboardArrowRight,
-} from '@mui/icons-material';
-import FirstPageIcon from '@mui/icons-material/FirstPage';
-import LastPageIcon from '@mui/icons-material/LastPage';
-import SearchIcon from '@mui/icons-material/Search';
+} from "@mui/icons-material";
+import FirstPageIcon from "@mui/icons-material/FirstPage";
+import LastPageIcon from "@mui/icons-material/LastPage";
+import SearchIcon from "@mui/icons-material/Search";
+import SearchOffIcon from "@mui/icons-material/SearchOff";
 
-import { RootState } from '@/store';
-import { startLoadingPosts } from '@/store/post/thunks';
-import { filterPost, setActivePost } from '@/store/post/postSlice';
-import SearchOffIcon from '@mui/icons-material/SearchOff';
-import { setTextFilter, resetTextFilter } from '@/store/post/postFilterSlice';
+import { RootState, store } from "@/store";
+import { filterPost, setActivePost } from "@/store/post/postSlice";
+import { setTextFilter, resetTextFilter } from "@/store/post/postFilterSlice";
+import FormDialog, { FormDialogProps } from "../ui/FormDialog";
+import { startLoadingPosts } from "@/store/post/thunks";
 
 interface PostTableProps {
   postList: Post[];
@@ -87,14 +87,14 @@ function TablePaginationActions(props: TablePaginationActionsProps) {
         disabled={page === 0}
         aria-label="first page"
       >
-        {theme.direction === 'rtl' ? <LastPageIcon /> : <FirstPageIcon />}
+        {theme.direction === "rtl" ? <LastPageIcon /> : <FirstPageIcon />}
       </IconButton>
       <IconButton
         onClick={handleBackButtonClick}
         disabled={page === 0}
         aria-label="previous page"
       >
-        {theme.direction === 'rtl' ? (
+        {theme.direction === "rtl" ? (
           <KeyboardArrowRight />
         ) : (
           <KeyboardArrowLeft />
@@ -105,7 +105,7 @@ function TablePaginationActions(props: TablePaginationActionsProps) {
         disabled={page >= Math.ceil(count / rowsPerPage) - 1}
         aria-label="next page"
       >
-        {theme.direction === 'rtl' ? (
+        {theme.direction === "rtl" ? (
           <KeyboardArrowLeft />
         ) : (
           <KeyboardArrowRight />
@@ -116,7 +116,7 @@ function TablePaginationActions(props: TablePaginationActionsProps) {
         disabled={page >= Math.ceil(count / rowsPerPage) - 1}
         aria-label="last page"
       >
-        {theme.direction === 'rtl' ? <FirstPageIcon /> : <LastPageIcon />}
+        {theme.direction === "rtl" ? <FirstPageIcon /> : <LastPageIcon />}
       </IconButton>
     </Box>
   );
@@ -154,79 +154,88 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
 
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
 
-  function toggleConfirmDialog(post: Post) {
+  function toggleConfirmDialog() {
     setOpenConfirmDialog(!openConfirmDialog);
-    dispatch(setActivePost(post));
   }
 
   const confirmDialogProps: ConfirmDialogProps = {
     onClose: toggleConfirmDialog,
-    title: 'Delete post',
-    message: 'Are you sure you want to delete this post?',
+    title: "Delete post",
+    message: "Are you sure you want to delete this post?",
     open: openConfirmDialog,
   };
 
   const [openFormDialog, setOpenFormDialog] = useState(false);
-  const [postSelected, setPostSelected] = useState();
+  const [postSelected, setPostSelected] = useState<Post>();
 
-  function toggleFormDialog(post: Post) {
+  function toggleFormDialog() {
     setOpenFormDialog(!openFormDialog);
-    setPostSelected(post);
-    dispatch(setActivePost(post));
+  }
+
+  function onEditPost(post: Post) {
+    setOpenFormDialog(!openFormDialog);
+    if (post != null) {
+      setPostSelected(post);
+      dispatch(setActivePost(post));
+    }
   }
 
   const formDialogProps: FormDialogProps = {
     onClose: toggleFormDialog,
-    title: 'Edit post',
+    title: "Edit post",
     open: openFormDialog,
-    postToUpdate: postSelected,
+    postToCreateUpdate: postSelected,
   };
 
   const onAddPost = () => {
+    debugger;
     setOpenFormDialog(!openFormDialog);
+    const postToCreate: Post = { id: 0, title: "", body: "", userId: 1 };
+    setPostSelected(postToCreate);
+    formDialogProps.title = "Add post";
   };
 
   const [isEmpty, setIsEmpty] = useState<boolean>(false);
 
   const handleFilterPost = (value: string) => {
     dispatch(setTextFilter({ textFilter: value.trimStart() }));
-    setIsEmpty(value.replace(/\s/g, '') === '');
+    setIsEmpty(value.replace(/\s/g, "") === "");
   };
 
   const handleSubmit = () => {
     try {
-      if (textFilter !== null || textFilter !== '') {
+      if (textFilter !== null || textFilter !== "") {
         dispatch(filterPost(textFilter));
       }
     } catch (error) {
-      console.log('Error search post');
+      console.log("Error search post");
     }
   };
 
   const resetFilter = () => {
     dispatch(resetTextFilter());
-    dispatch(startLoadingPosts());
+    store.dispatch(startLoadingPosts());
   };
 
   return (
     <Box>
       <Toolbar>
-        <Typography variant="h5" noWrap component="div">          
+        <Typography variant="h5" noWrap component="div">
           Admin Posts
         </Typography>
         <Paper
           component="form"
           onSubmit={(e) => e.preventDefault()}
           sx={{
-            p: '2px 4px',
-            display: 'flex',
-            alignItems: 'center',
+            p: "2px 4px",
+            display: "flex",
+            alignItems: "center",
             width: 400,
-            ml: '435px',
+            ml: "435px",
           }}
         >
           <InputBase
-            sx={{ p: '5px', ml: 1, flex: 1 }}
+            sx={{ p: "5px", ml: 1, flex: 1 }}
             placeholder="Search post"
             key="textFilter"
             name="textFilter"
@@ -235,10 +244,10 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
           />
 
           <IconButton
-            sx={{ p: '10px' }}
+            sx={{ p: "10px" }}
             aria-label="search"
             onClick={handleSubmit}
-            disabled={textFilter === ''}
+            disabled={textFilter === ""}
           >
             <SearchIcon />
           </IconButton>
@@ -246,10 +255,10 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
           <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
 
           <IconButton
-            sx={{ p: '10px' }}
+            sx={{ p: "10px" }}
             aria-label="search-off"
             onClick={resetFilter}
-            disabled={textFilter === ''}
+            disabled={textFilter === ""}
           >
             <SearchOffIcon />
           </IconButton>
@@ -258,12 +267,11 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
         <IconButton
           onClick={onAddPost}
           size="large"
-          disabled={isSaving}
           sx={{
-            color: 'white',
-            backgroundColor: 'grey',
-            ':hover': { backgroundColor: 'grey', opacity: 0.9 },
-            position: 'absolute',
+            color: "white",
+            backgroundColor: "grey",
+            ":hover": { backgroundColor: "grey", opacity: 0.9 },
+            position: "absolute",
             right: 55,
             top: 10,
           }}
@@ -282,34 +290,34 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
         alignItems="center"
         justifyContent="center"
         sx={{
-          minHeight: 'calc(100vh - 110px)',
-          backgroundColor: '#80808099',
+          minHeight: "calc(100vh - 110px)",
+          backgroundColor: "#80808099",
           borderRadius: 3,
-          width: '97%',
-          marginLeft: '15px',
-          marginRight: '15px',
+          width: "97%",
+          marginLeft: "15px",
+          marginRight: "15px",
         }}
       >
         <Table>
           <TableHead>
             <TableRow>
               <TableCell>
-                <Typography variant="h5" component={'h5'}>
+                <Typography variant="h5" component={"h5"}>
                   ID
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography variant="h5" component={'h5'}>
+                <Typography variant="h5" component={"h5"}>
                   Title
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography variant="h5" component={'h5'}>
+                <Typography variant="h5" component={"h5"}>
                   Description
                 </Typography>
               </TableCell>
               <TableCell>
-                <Typography variant="h5" component={'h5'}>
+                <Typography variant="h5" component={"h5"}>
                   Actions
                 </Typography>
               </TableCell>
@@ -328,16 +336,10 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
                 <TableCell>{post.title}</TableCell>
                 <TableCell>{post.body}</TableCell>
                 <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={() => toggleFormDialog(post)}
-                  >
+                  <IconButton size="small" onClick={() => onEditPost(post)}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => toggleConfirmDialog(post)}
-                  >
+                  <IconButton size="small" onClick={toggleConfirmDialog}>
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
@@ -352,14 +354,14 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
           <TableFooter>
             <TableRow>
               <TablePagination
-                rowsPerPageOptions={[5, 10, 25, { label: 'All', value: -1 }]}
+                rowsPerPageOptions={[5, 10, 25, { label: "All", value: -1 }]}
                 colSpan={3}
                 count={posts.length}
                 rowsPerPage={rowsPerPage}
                 page={page}
                 SelectProps={{
                   inputProps: {
-                    'aria-label': 'rows per page',
+                    "aria-label": "rows per page",
                   },
                   native: true,
                 }}
