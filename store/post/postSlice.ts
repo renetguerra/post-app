@@ -81,15 +81,15 @@ export const postSlice = createSlice({
 
       state.posts = state.posts.filter((post) => post.id !== action.payload);
 
-      state.titleMessageSaved = "Deleted Post";
-      state.messageSaved = `${post?.title}, post deleted correctly`;
-
       const postIndex = state.postListTemp.findIndex(
         (post) => post.id === action.payload
       );
       state.postListTemp.splice(postIndex, 1);
 
       if (state.postListTemp.length > 0) state.posts = state.postListTemp;
+
+      state.titleMessageSaved = "Deleted Post";
+      state.messageSaved = `${post?.title}, post deleted correctly`;
     },
   },
 });
