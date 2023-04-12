@@ -4,7 +4,6 @@ import {
   addPost,
   deletePostById,
   savingPost,
-  setActivePost,
   setPosts,
   setSaving,
   updatePost,
@@ -21,7 +20,6 @@ export const startAddPost = (postToCreate: Post) => {
     if (postToCreate.id == 0) postToCreate.id = response.data.id;
 
     //! dispatch
-    dispatch(setActivePost(postToCreate));
     dispatch(addPost(postToCreate));
   };
 };
