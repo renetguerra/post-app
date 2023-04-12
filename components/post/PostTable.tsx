@@ -154,6 +154,11 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
 
   const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
 
+  function onDeleteConfirmDialog(post: Post) {
+    setOpenConfirmDialog(!openConfirmDialog);
+    dispatch(setActivePost(post));
+  }
+
   function toggleConfirmDialog() {
     setOpenConfirmDialog(!openConfirmDialog);
   }
@@ -188,7 +193,6 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
   };
 
   const onAddPost = () => {
-    debugger;
     setOpenFormDialog(!openFormDialog);
     const postToCreate: Post = { id: 0, title: "", body: "", userId: 1 };
     setPostSelected(postToCreate);
@@ -339,7 +343,10 @@ const PostTable: React.FC<PostTableProps> = ({ postList }) => {
                   <IconButton size="small" onClick={() => onEditPost(post)}>
                     <EditIcon />
                   </IconButton>
-                  <IconButton size="small" onClick={toggleConfirmDialog}>
+                  <IconButton
+                    size="small"
+                    onClick={() => onDeleteConfirmDialog(post)}
+                  >
                     <DeleteIcon />
                   </IconButton>
                 </TableCell>
