@@ -13,7 +13,7 @@ import { useEffect } from "react";
 import { store, RootState } from "@/store";
 import Swal from "sweetalert2";
 import { Post } from "@/interfaces/post";
-import { setSaving } from "@/store/post/postSlice";
+import { setActivePost, setSaving } from "@/store/post/postSlice";
 
 const Transition = React.forwardRef(function Transition(
   props: TransitionProps & {
@@ -39,8 +39,11 @@ export default function ConfirmDialog(props: ConfirmDialogProps) {
     messageSaved,
   } = useSelector((state: RootState) => state.post);
 
-  const handleConfirmDeletePost = () => {
-    store.dispatch(startDeletingPost());
+  const handleConfirmDeletePost = (post: Post | null) => {
+    if (post != null) {
+      dispatch(setActivePost(post));
+      store.dispatch(startDeletingPost());
+    }
   };
 
   useEffect(() => {
@@ -73,7 +76,10 @@ export default function ConfirmDialog(props: ConfirmDialogProps) {
         <Button variant="outlined" onClick={props.onClose}>
           Disagree
         </Button>
-        <Button variant="contained" onClick={handleConfirmDeletePost}>
+        <Button
+          variant="contained"
+          onClick={() => handleConfirmDeletePost(post)}
+        >
           Agree
         </Button>
       </DialogActions>
