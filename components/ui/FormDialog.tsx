@@ -1,389 +1,200 @@
-import React, { useState } from "react";
+import * as React from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TablePagination,
-  Typography,
-  Grid,
-  useTheme,
-  Toolbar,
-  InputBase,
-  Divider,
-  Paper,
-  TableFooter,
-} from "@mui/material";
-import IconButton from "@mui/material/IconButton";
-import EditIcon from "@mui/icons-material/Edit";
-import { Post } from "@/interfaces/post";
-import DeleteIcon from "@mui/icons-material/DeleteOutlined";
-import ConfirmDialog, { ConfirmDialogProps } from "../ui/ConfirmDialog";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import Slide from "@mui/material/Slide";
+import { TransitionProps } from "@mui/material/transitions";
+import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
+import Grid from "@mui/material/Grid";
+import Chip from "@mui/material/Chip";
+import { ErrorOutline, SaveOutlined } from "@mui/icons-material";
+
+import { useForm } from "react-hook-form";
+
+import { Post } from "@/interfaces/post";
+import { store, RootState } from "@/store";
 import {
-  AddOutlined,
-  KeyboardArrowLeft,
-  KeyboardArrowRight,
-} from "@mui/icons-material";
-import FirstPageIcon from "@mui/icons-material/FirstPage";
-import LastPageIcon from "@mui/icons-material/LastPage";
-import SearchIcon from "@mui/icons-material/Search";
-import SearchOffIcon from "@mui/icons-material/SearchOff";
+  startAddPost,
+  startLoadingPosts,
+  startSavePost,
+} from "@/store/post/thunks";
+import Swal from "sweetalert2";
+import { setSaving } from "@/store/post/postSlice";
 
-import { RootState, store } from "@/store";
-import { filterPost, setActivePost } from "@/store/post/postSlice";
-import { setTextFilter, resetTextFilter } from "@/store/post/postFilterSlice";
-import FormDialog, { FormDialogProps } from "../ui/FormDialog";
-import { startLoadingPosts } from "@/store/post/thunks";
+const Transition = React.forwardRef(function Transition(
+  props: TransitionProps & {
+    children: React.ReactElement<any, any>;
+  },
+  ref: React.Ref<unknown>
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
 
-interface PostTableProps {
-  postList: Post[];
+export interface FormDialogProps {
+  onClose: () => void;
+  title: string;
+  open: boolean;
+  postToCreateUpdate: Post | undefined;
 }
 
-interface TablePaginationActionsProps {
-  count: number;
-  page: number;
-  rowsPerPage: number;
-  onPageChange: (
-    event: React.MouseEvent<HTMLButtonElement>,
-    newPage: number
-  ) => void;
-}
+type FormData = {
+  id: number;
+  title: string;
+  body: string;
+  userId: number;
+};
 
-function TablePaginationActions(props: TablePaginationActionsProps) {
-  const theme = useTheme();
-  const { count, page, rowsPerPage, onPageChange } = props;
-
-  const handleFirstPageButtonClick = (
-    event: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    onPageChange(event, 0);
-  };
-
-  const handleBackButtonClick = (
-    event: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    onPageChange(event, page - 1);
-  };
-
-  const handleNextButtonClick = (
-    event: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    onPageChange(event, page + 1);
-  };
-
-  const handleLastPageButtonClick = (
-    event: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    onPageChange(event, Math.max(0, Math.ceil(count / rowsPerPage) - 1));
-  };
-
-  return (
-    <Box sx={{ flexShrink: 0, ml: 2.5 }}>
-      <IconButton
-        onClick={handleFirstPageButtonClick}
-        disabled={page === 0}
-        aria-label="first page"
-      >
-        {theme.direction === "rtl" ? <LastPageIcon /> : <FirstPageIcon />}
-      </IconButton>
-      <IconButton
-        onClick={handleBackButtonClick}
-        disabled={page === 0}
-        aria-label="previous page"
-      >
-        {theme.direction === "rtl" ? (
-          <KeyboardArrowRight />
-        ) : (
-          <KeyboardArrowLeft />
-        )}
-      </IconButton>
-      <IconButton
-        onClick={handleNextButtonClick}
-        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
-        aria-label="next page"
-      >
-        {theme.direction === "rtl" ? (
-          <KeyboardArrowLeft />
-        ) : (
-          <KeyboardArrowRight />
-        )}
-      </IconButton>
-      <IconButton
-        onClick={handleLastPageButtonClick}
-        disabled={page >= Math.ceil(count / rowsPerPage) - 1}
-        aria-label="last page"
-      >
-        {theme.direction === "rtl" ? <FirstPageIcon /> : <LastPageIcon />}
-      </IconButton>
-    </Box>
-  );
-}
-
-const PostTable: React.FC<PostTableProps> = ({ postList }) => {
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-
+const FormDialog = (props: FormDialogProps) => {
   const dispatch = useDispatch();
   const {
     active: post,
+    titleMessageSaved,
+    messageSaved,
     isSaving,
     posts,
   } = useSelector((state: RootState) => state.post);
 
-  const { textFilter } = useSelector((state: RootState) => state.postFilter);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    getValues,
+    setValue,
+    watch,
+  } = useForm<FormData>({
+    defaultValues: props.postToCreateUpdate,
+  });
+  const [showError, setShowError] = useState(false);
 
-  const emptyRows =
-    rowsPerPage - Math.min(rowsPerPage, postList.length - page * rowsPerPage);
+  useEffect(() => {
+    const subcription = watch((value, { name, type }) => {});
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number
-  ) => {
-    setPage(newPage);
-  };
+    return () => {
+      subcription.unsubscribe();
+    };
+  }, [watch, setValue]);
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
-
-  function onDeleteConfirmDialog(post: Post) {
-    setOpenConfirmDialog(!openConfirmDialog);
-    dispatch(setActivePost(post));
-  }
-
-  function toggleConfirmDialog() {
-    setOpenConfirmDialog(!openConfirmDialog);
-  }
-
-  const confirmDialogProps: ConfirmDialogProps = {
-    onClose: toggleConfirmDialog,
-    title: "Delete post",
-    message: "Are you sure you want to delete this post?",
-    open: openConfirmDialog,
-  };
-
-  const [openFormDialog, setOpenFormDialog] = useState(false);
-  const [postSelected, setPostSelected] = useState<Post>();
-
-  function toggleFormDialog() {
-    setOpenFormDialog(!openFormDialog);
-  }
-
-  function onEditPost(post: Post) {
-    setOpenFormDialog(!openFormDialog);
-    if (post != null) {
-      setPostSelected(post);
-      dispatch(setActivePost(post));
+  useEffect(() => {
+    if (
+      titleMessageSaved != null &&
+      messageSaved !== null &&
+      messageSaved.length > 0
+    ) {
+      Swal.fire(titleMessageSaved, messageSaved, "success");
+      props.onClose();
+      dispatch(setSaving());
     }
-  }
+  }, [messageSaved]);
 
-  const formDialogProps: FormDialogProps = {
-    onClose: toggleFormDialog,
-    title: "Edit post",
-    open: openFormDialog,
-    postToCreateUpdate: postSelected,
-  };
-
-  const onAddPost = () => {
-    setOpenFormDialog(!openFormDialog);
-    const postToCreate: Post = { id: 0, title: "", body: "", userId: 1 };
-    setPostSelected(postToCreate);
-    formDialogProps.title = "Add post";
-  };
-
-  const [isEmpty, setIsEmpty] = useState<boolean>(false);
-
-  const handleFilterPost = (value: string) => {
-    dispatch(setTextFilter({ textFilter: value.trimStart() }));
-    setIsEmpty(value.replace(/\s/g, "") === "");
-  };
-
-  const handleSubmit = () => {
+  const onSavePost = async (postToSave: FormData) => {
     try {
-      if (textFilter !== null || textFilter !== "") {
-        dispatch(filterPost(textFilter));
-      }
-    } catch (error) {
-      console.log("Error search post");
-    }
-  };
+      if (!postToSave?.id) {
+        const postToCreate = {
+          id: 0,
+          title: postToSave.title,
+          body: postToSave.body,
+          userId: 1,
+        };
 
-  const resetFilter = () => {
-    dispatch(resetTextFilter());
-    store.dispatch(startLoadingPosts());
+        if (posts != null && posts.length > 0) {
+          postToCreate.id = posts.length + 1;
+        } else {
+          store.dispatch(startLoadingPosts());
+        }
+        store.dispatch(startAddPost(postToCreate));
+      } else {
+        store.dispatch(startSavePost(postToSave));
+      }
+
+      setShowError(false);
+    } catch (error) {
+      console.log("Error editing post");
+      setShowError(true);
+      setTimeout(() => {
+        setShowError(false);
+      }, 3000);
+    }
   };
 
   return (
     <Box>
-      <Toolbar>
-        <Typography variant="h5" noWrap component="div">
-          Admin Posts
-        </Typography>
-        <Paper
-          component="form"
-          onSubmit={(e) => e.preventDefault()}
-          sx={{
-            p: "2px 4px",
-            display: "flex",
-            alignItems: "center",
-            width: 400,
-            ml: "435px",
-          }}
-        >
-          <InputBase
-            sx={{ p: "5px", ml: 1, flex: 1 }}
-            placeholder="Search post"
-            key="textFilter"
-            name="textFilter"
-            value={textFilter}
-            onChange={(e) => handleFilterPost(e.target.value)}
-          />
-
-          <IconButton
-            sx={{ p: "10px" }}
-            aria-label="search"
-            onClick={handleSubmit}
-            disabled={textFilter === ""}
-          >
-            <SearchIcon />
-          </IconButton>
-
-          <Divider sx={{ height: 28, m: 0.5 }} orientation="vertical" />
-
-          <IconButton
-            sx={{ p: "10px" }}
-            aria-label="search-off"
-            onClick={resetFilter}
-            disabled={textFilter === ""}
-          >
-            <SearchOffIcon />
-          </IconButton>
-        </Paper>
-
-        <IconButton
-          onClick={onAddPost}
-          size="large"
-          sx={{
-            color: "white",
-            backgroundColor: "grey",
-            ":hover": { backgroundColor: "grey", opacity: 0.9 },
-            position: "absolute",
-            right: 55,
-            top: 10,
-          }}
-        >
-          <AddOutlined sx={{ fontSize: 20 }} />
-        </IconButton>
-      </Toolbar>
-
-      <Box>{post && <FormDialog {...formDialogProps} />}</Box>
-
-      <Grid
-        className="animate__animated animate__fadeIn animate__faster"
-        container
-        spacing={0}
-        direction="column"
-        alignItems="center"
-        justifyContent="center"
-        sx={{
-          minHeight: "calc(100vh - 110px)",
-          backgroundColor: "#80808099",
-          borderRadius: 3,
-          width: "97%",
-          marginLeft: "15px",
-          marginRight: "15px",
-        }}
+      <Dialog
+        open={props.open}
+        TransitionComponent={Transition}
+        keepMounted
+        onClose={props.onClose}
+        aria-describedby="alert-dialog-slide-description"
       >
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                <Typography variant="h5" component={"h5"}>
-                  ID
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography variant="h5" component={"h5"}>
-                  Title
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography variant="h5" component={"h5"}>
-                  Description
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography variant="h5" component={"h5"}>
-                  Actions
-                </Typography>
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {(rowsPerPage > 0
-              ? posts.slice(
-                  page * rowsPerPage,
-                  page * rowsPerPage + rowsPerPage
-                )
-              : posts
-            ).map((post) => (
-              <TableRow key={post.id}>
-                <TableCell>{post.id}</TableCell>
-                <TableCell>{post.title}</TableCell>
-                <TableCell>{post.body}</TableCell>
-                <TableCell>
-                  <IconButton size="small" onClick={() => onEditPost(post)}>
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={() => onDeleteConfirmDialog(post)}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-            {emptyRows > 0 && (
-              <TableRow style={{ height: 53 * emptyRows }}>
-                <TableCell colSpan={6} />
-              </TableRow>
-            )}
-          </TableBody>
-          <TableFooter>
-            <TableRow>
-              <TablePagination
-                rowsPerPageOptions={[5, 10, 25, { label: "All", value: -1 }]}
-                colSpan={3}
-                count={posts.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                SelectProps={{
-                  inputProps: {
-                    "aria-label": "rows per page",
-                  },
-                  native: true,
-                }}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleChangeRowsPerPage}
-                ActionsComponent={TablePaginationActions}
-              />
-            </TableRow>
-          </TableFooter>
-        </Table>
-        {openConfirmDialog && <ConfirmDialog {...confirmDialogProps} />}
-        {openFormDialog && <FormDialog {...formDialogProps} />}
-      </Grid>
+        <form onSubmit={handleSubmit(onSavePost)}>
+          <DialogTitle>{props.title}</DialogTitle>
+          <DialogContent>
+            <Box sx={{ width: 350, padding: "10px 20px" }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12}>
+                  <Chip
+                    label="Error"
+                    color="error"
+                    icon={<ErrorOutline />}
+                    className="fadeIn"
+                    sx={{ display: showError ? "flex" : "none" }}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Id"
+                    value={props.postToCreateUpdate?.id}
+                    fullWidth
+                    disabled
+                    variant="filled"
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Title"
+                    fullWidth
+                    variant="filled"
+                    {...register("title", {
+                      required: "Este campo es requerido",
+                      minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                    })}
+                    error={!!errors.title}
+                    helperText={errors.title?.message}
+                  />
+                </Grid>
+                <Grid item xs={12}>
+                  <TextField
+                    label="Description"
+                    fullWidth
+                    variant="filled"
+                    {...register("body", {
+                      required: "Este campo es requerido",
+                      minLength: { value: 2, message: "Mínimo 2 caracteres" },
+                    })}
+                    error={!!errors.body}
+                    helperText={errors.body?.message}
+                  />
+                </Grid>
+              </Grid>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button variant="outlined" onClick={props.onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" variant="contained">
+              <SaveOutlined sx={{ fontSize: 30, mr: 1 }} />
+              Save
+            </Button>
+          </DialogActions>
+        </form>
+      </Dialog>
     </Box>
   );
 };
 
-export default PostTable;
+export default FormDialog;
